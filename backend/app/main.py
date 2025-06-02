@@ -2,8 +2,9 @@ from fastapi import FastAPI, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-
-from app.db.database import engine, Base
+from sqlalchemy.orm import Session # Import Session
+from app.db.database import engine, Base, get_db # Import get_db
+from app.db import models # Import models
 from app.routes import auth, admin, repairshop, user
 
 # 1. Khởi tạo database
@@ -15,6 +16,34 @@ app = FastAPI(
     version="1.0.0",
     description="Hệ thống tìm kiếm và quản lý tiệm sửa xe"
 )
+
+# THÊM: Sự kiện startup để kiểm tra và tạo tài khoản admin
+@app.on_event("startup")
+async def startup_event():
+    # Sử dụng SessionLocal trực tiếp để có thể tạo session trước khi ứng dụng khởi động hoàn toàn
+    db: Session = next(get_db()) # Lấy một session từ generator
+    try:
+        # Kiểm tra xem có người dùng nào với vai trò 'admin' chưa
+        admin_user = db.query(models.User).filter(models.User.role == "admin").first()
+
+        if not admin_user:
+            # Nếu chưa có admin, tạo một tài khoản admin mới
+            new_admin = models.User(
+                username="admin_ridecare", # Tên người dùng admin mặc định
+                email="admin@ridecare.com", # Email admin mặc định
+                password_hash="12345",      # Mật khẩu admin mặc định (RẤT KHÔNG AN TOÀN!)
+                role="admin"
+            )
+            db.add(new_admin)
+            db.commit()
+            db.refresh(new_admin)
+            print(">>> Tài khoản Admin mặc định 'admin_ridecare' đã được tạo <<<")
+        else:
+            print(">>> Tài khoản Admin đã tồn tại. Không tạo mới. <<<")
+    except Exception as e:
+        print(f"Lỗi khi kiểm tra/tạo tài khoản admin: {e}")
+    finally:
+        db.close()
 
 # 3. CORS Middleware (cho phép frontend truy cập API)
 app.add_middleware(
