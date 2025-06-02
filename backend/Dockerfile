@@ -1,19 +1,17 @@
+# backend/Dockerfile
+
 FROM python:3.9-slim
 
 WORKDIR /app
 
-# Copy file requirements.txt từ thư mục backend
-COPY ./backend/requirements.txt requirements.txt
+COPY requirements.txt .
 
-# Cài đặt các dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy toàn bộ mã nguồn backend
-COPY ./backend/ .
+COPY . .
 
-# Copy thư mục frontend
-COPY ./frontend /app/frontend
-
+# Chỉ định cổng mà ứng dụng sẽ lắng nghe
 EXPOSE 8000
 
+# Lệnh để khởi động ứng dụng của bạn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
