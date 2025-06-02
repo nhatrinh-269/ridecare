@@ -10,7 +10,8 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False)
     email = Column(String(100), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
-    role = Column(Enum("admin", "repair_shop", "user"), nullable=False)
+    # Cập nhật: Thêm tên cho Enum cho PostgreSQL
+    role = Column(Enum("admin", "repair_shop", "user", name="user_role_enum"), nullable=False)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -27,8 +28,8 @@ class RepairShop(Base):
     description = Column(String(500), nullable=True)
     approved = Column(Boolean, default=False)
     rating_avg = Column(Float, default=0.0)
-    latitude = Column(Float, nullable=True)      # Thêm
-    longitude = Column(Float, nullable=True)     # Thêm
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
@@ -56,7 +57,8 @@ class Order(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     service_id = Column(Integer, ForeignKey("services.id"), nullable=False)
     repair_shop_id = Column(Integer, ForeignKey("repairshops.id"), nullable=False)
-    status = Column(Enum("pending", "confirmed", "in_progress", "completed", "cancelled"), default="pending")
+    # Cập nhật: Thêm tên cho Enum cho PostgreSQL
+    status = Column(Enum("pending", "confirmed", "in_progress", "completed", "cancelled", name="order_status_enum"), default="pending")
     order_date = Column(DateTime, default=func.now())
     scheduled_date = Column(DateTime, nullable=True)
     completed_date = Column(DateTime, nullable=True)
@@ -67,9 +69,11 @@ class Payment(Base):
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"), unique=True, nullable=False)
     amount = Column(DECIMAL(10,2), nullable=False)
-    payment_method = Column(Enum("credit_card", "cash", "ewallet"), nullable=False)
+    # Cập nhật: Thêm tên cho Enum cho PostgreSQL
+    payment_method = Column(Enum("credit_card", "cash", "ewallet", name="payment_method_enum"), nullable=False)
     transaction_id = Column(String(255), nullable=True)
-    status = Column(Enum("pending", "completed", "failed"), default="pending")
+    # Cập nhật: Thêm tên cho Enum cho PostgreSQL
+    status = Column(Enum("pending", "completed", "failed", name="payment_status_enum"), default="pending")
 
 class Review(Base):
     __tablename__ = "reviews"
@@ -80,4 +84,4 @@ class Review(Base):
     rating = Column(Integer, nullable=False)
     comment = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=func.now())
-    repair_shop = relationship("RepairShop", back_populates="reviews") 
+    repair_shop = relationship("RepairShop", back_populates="reviews")
