@@ -1,49 +1,69 @@
 from fastapi import FastAPI, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from fastapi.staticfiles import StaticFiles # Bạn có thể cần nếu dùng StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy.orm import Session # Import Session
-from app.db.database import engine, Base, get_db # Import get_db
-from app.db import models # Import models
+from contextlib import asynccontextmanager # <<< THÊM IMPORT NÀY
+
+# Giả sử SessionLocal được định nghĩa trong database.py để tạo session
+from app.db.database import engine, Base, SessionLocal # <<< THÊM SessionLocal
 from app.routes import auth, admin, repairshop, user
+from app.db.init_db import create_initial_data # <<< THÊM IMPORT NÀY
 
-# 1. Khởi tạo database
-Base.metadata.create_all(bind=engine)
+# Hàm lifespan để xử lý sự kiện khởi động và tắt ứng dụng
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Code thực thi khi ứng dụng khởi động
+    print("Ứng dụng đang khởi động...")
+    print("Đang tạo các bảng trong cơ sở dữ liệu (nếu chưa có)...")
+    Base.metadata.create_all(bind=engine) # Tạo bảng nếu chưa tồn tại
 
-# 2. Khởi tạo ứng dụng FastAPI
+    # Tạo dữ liệu mẫu
+    print("Đang khởi tạo dữ liệu mẫu...")
+    db = SessionLocal()
+    try:
+        create_initial_data(db)
+        print("Hoàn tất tạo dữ liệu mẫu.")
+    except Exception as e:
+        print(f"Lỗi khi tạo dữ liệu mẫu: {e}")
+    finally:
+        db.close()
+    
+    yield # Đây là điểm ứng dụng sẽ chạy
+    
+    # Code thực thi khi ứng dụng tắt (nếu cần)
+    print("Ứng dụng đang tắt...")
+
+# Hàm lifespan để xử lý sự kiện khởi động và tắt ứng dụng
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Code thực thi khi ứng dụng khởi động
+    print("Ứng dụng đang khởi động...")
+    print("Đang tạo các bảng trong cơ sở dữ liệu (nếu chưa có)...")
+    Base.metadata.create_all(bind=engine) # Tạo bảng nếu chưa tồn tại
+
+    # Tạo dữ liệu mẫu
+    print("Đang khởi tạo dữ liệu mẫu...")
+    db = SessionLocal()
+    try:
+        create_initial_data(db)
+        print("Hoàn tất tạo dữ liệu mẫu.")
+    except Exception as e:
+        print(f"Lỗi khi tạo dữ liệu mẫu: {e}")
+    finally:
+        db.close()
+    
+    yield # Đây là điểm ứng dụng sẽ chạy
+    
+    # Code thực thi khi ứng dụng tắt (nếu cần)
+    print("Ứng dụng đang tắt...")
+
+# 2. Khởi tạo ứng dụng FastAPI với lifespan
 app = FastAPI(
     title="RideCare API",
     version="1.0.0",
-    description="Hệ thống tìm kiếm và quản lý tiệm sửa xe"
+    description="Hệ thống tìm kiếm và quản lý tiệm sửa xe",
+    lifespan=lifespan # <<< THÊM THAM SỐ NÀY
 )
-
-# THÊM: Sự kiện startup để kiểm tra và tạo tài khoản admin
-@app.on_event("startup")
-async def startup_event():
-    # Sử dụng SessionLocal trực tiếp để có thể tạo session trước khi ứng dụng khởi động hoàn toàn
-    db: Session = next(get_db()) # Lấy một session từ generator
-    try:
-        # Kiểm tra xem có người dùng nào với vai trò 'admin' chưa
-        admin_user = db.query(models.User).filter(models.User.role == "admin").first()
-
-        if not admin_user:
-            # Nếu chưa có admin, tạo một tài khoản admin mới
-            new_admin = models.User(
-                username="admin_ridecare", # Tên người dùng admin mặc định
-                email="admin@ridecare.com", # Email admin mặc định
-                password_hash="12345",      # Mật khẩu admin mặc định (RẤT KHÔNG AN TOÀN!)
-                role="admin"
-            )
-            db.add(new_admin)
-            db.commit()
-            db.refresh(new_admin)
-            print(">>> Tài khoản Admin mặc định 'admin_ridecare' đã được tạo <<<")
-        else:
-            print(">>> Tài khoản Admin đã tồn tại. Không tạo mới. <<<")
-    except Exception as e:
-        print(f"Lỗi khi kiểm tra/tạo tài khoản admin: {e}")
-    finally:
-        db.close()
 
 # 3. CORS Middleware (cho phép frontend truy cập API)
 app.add_middleware(
@@ -59,7 +79,7 @@ templates = Jinja2Templates(directory="frontend")
 
 # 6. Đăng ký routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(admin.router, prefix="/admin", tags=["Admin"]) # API endpoints for admin
+app.include_router(admin.router, prefix="/admin", tags=["Admin"])
 app.include_router(user.router, prefix="/users", tags=["Users"])
 app.include_router(repairshop.router, prefix="/repairshop", tags=["Repair Shops"])
 
@@ -68,7 +88,6 @@ app.include_router(repairshop.router, prefix="/repairshop", tags=["Repair Shops"
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# --- Admin HTML Page Routes ---
 @app.get("/admin/dashboard")
 async def get_admin_dashboard(request: Request):
     return templates.TemplateResponse("admin/dashboard.html", {"request": request})
@@ -85,15 +104,6 @@ async def get_admin_repairshop_management(request: Request):
 async def get_admin_service_management(request: Request):
     return templates.TemplateResponse("admin/service_management.html", {"request": request})
 
-@app.get("/admin/order_management") # <<< NEW ROUTE
-async def get_admin_order_management(request: Request):
-    return templates.TemplateResponse("admin/order_management.html", {"request": request})
-
-@app.get("/admin/payment_management") # <<< NEW ROUTE
-async def get_admin_payment_management(request: Request):
-    return templates.TemplateResponse("admin/payment_management.html", {"request": request})
-
-# --- Repairshop HTML Page Routes ---
 @app.get("/repairshop/dashboard")
 async def get_repairshop_dashboard(request: Request):
     return templates.TemplateResponse("repairshop/dashboard.html", {"request": request})
@@ -110,11 +120,10 @@ async def get_repairshop_revenue(request: Request):
 async def get_repairshop_info(request: Request):
     return templates.TemplateResponse("repairshop/shop_info.html", {"request": request})
 
-# --- User HTML Page Routes ---
 @app.get("/user/dashboard")
 async def get_user_dashboard(request: Request):
     return templates.TemplateResponse("user/dashboard.html", {"request": request})
-
+# 
 @app.get("/user/booking")
 async def booking(request: Request, shop_id: int = Query(...), service_ids: str = Query(...)):
     return templates.TemplateResponse("user/booking.html", {
@@ -143,7 +152,6 @@ async def get_user_shop_details(request: Request):
 async def get_user_information(request: Request):
     return templates.TemplateResponse("user/user_information.html", {"request": request})
 
-# --- General Page Routes ---
 @app.get("/login")
 async def get_login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
