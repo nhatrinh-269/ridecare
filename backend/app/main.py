@@ -59,7 +59,7 @@ templates = Jinja2Templates(directory="frontend")
 
 # 6. Đăng ký routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(admin.router, prefix="/admin", tags=["Admin"])
+app.include_router(admin.router, prefix="/admin", tags=["Admin"]) # API endpoints for admin
 app.include_router(user.router, prefix="/users", tags=["Users"])
 app.include_router(repairshop.router, prefix="/repairshop", tags=["Repair Shops"])
 
@@ -68,6 +68,7 @@ app.include_router(repairshop.router, prefix="/repairshop", tags=["Repair Shops"
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+# --- Admin HTML Page Routes ---
 @app.get("/admin/dashboard")
 async def get_admin_dashboard(request: Request):
     return templates.TemplateResponse("admin/dashboard.html", {"request": request})
@@ -84,6 +85,15 @@ async def get_admin_repairshop_management(request: Request):
 async def get_admin_service_management(request: Request):
     return templates.TemplateResponse("admin/service_management.html", {"request": request})
 
+@app.get("/admin/order_management") # <<< NEW ROUTE
+async def get_admin_order_management(request: Request):
+    return templates.TemplateResponse("admin/order_management.html", {"request": request})
+
+@app.get("/admin/payment_management") # <<< NEW ROUTE
+async def get_admin_payment_management(request: Request):
+    return templates.TemplateResponse("admin/payment_management.html", {"request": request})
+
+# --- Repairshop HTML Page Routes ---
 @app.get("/repairshop/dashboard")
 async def get_repairshop_dashboard(request: Request):
     return templates.TemplateResponse("repairshop/dashboard.html", {"request": request})
@@ -100,10 +110,11 @@ async def get_repairshop_revenue(request: Request):
 async def get_repairshop_info(request: Request):
     return templates.TemplateResponse("repairshop/shop_info.html", {"request": request})
 
+# --- User HTML Page Routes ---
 @app.get("/user/dashboard")
 async def get_user_dashboard(request: Request):
     return templates.TemplateResponse("user/dashboard.html", {"request": request})
-# 
+
 @app.get("/user/booking")
 async def booking(request: Request, shop_id: int = Query(...), service_ids: str = Query(...)):
     return templates.TemplateResponse("user/booking.html", {
@@ -132,6 +143,7 @@ async def get_user_shop_details(request: Request):
 async def get_user_information(request: Request):
     return templates.TemplateResponse("user/user_information.html", {"request": request})
 
+# --- General Page Routes ---
 @app.get("/login")
 async def get_login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})

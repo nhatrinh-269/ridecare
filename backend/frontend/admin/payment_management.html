@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Payments - RideCare Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 24px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .table th, .table td {
+            padding: 0.75rem;
+            vertical-align: middle;
+        }
+        .table th {
+            background-color: #e5e7eb;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #10b981;
+            color: white;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        .toast.error {
+            background-color: #ef4444;
+        }
+        .modal-body-scrollable {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .status-badge {
+            padding: 0.25em 0.6em;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            text-transform: capitalize;
+        }
+        .status-pending { background-color: #fffbeb; color: #f59e0b; } /* amber-100, amber-500 */
+        .status-completed { background-color: #f0fdf4; color: #22c55e; } /* green-100, green-500 */
+        .status-failed { background-color: #fee2e2; color: #ef4444; } /* red-100, red-500 */
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <header class="bg-blue-600 text-white shadow-md">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold">RideCare Admin</h1>
+            <nav>
+                <a href="admin_dashboard" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700">Dashboard</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-3xl font-semibold text-gray-800">Manage Payments</h2>
+            <button onclick="openCreateModal()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
+                Create New Payment
+            </button>
+        </div>
+
+        <div class="bg-white shadow-xl rounded-lg overflow-x-auto">
+            <table class="min-w-full table-auto">
+                <thead class="bg-gray-200 text-gray-700">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Order ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Method</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Transaction ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="paymentsTableBody" class="bg-white divide-y divide-gray-200 text-gray-700">
+                    </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h3 id="modalTitle" class="text-2xl font-semibold mb-6 text-gray-800">Create Payment</h3>
+            <form id="paymentForm">
+                <input type="hidden" id="paymentId" name="paymentId">
+                <div class="modal-body-scrollable pr-2">
+                    <div class="mb-4">
+                        <label for="paymentOrderId" class="block text-gray-700 text-sm font-bold mb-2">Order ID:</label>
+                        <input type="number" id="paymentOrderId" name="order_id" required class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="mb-4">
+                        <label for="paymentAmount" class="block text-gray-700 text-sm font-bold mb-2">Amount:</label>
+                        <input type="number" step="0.01" id="paymentAmount" name="amount" required class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="mb-4">
+                        <label for="paymentMethod" class="block text-gray-700 text-sm font-bold mb-2">Payment Method:</label>
+                        <select id="paymentMethod" name="payment_method" required class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="credit_card">Credit Card</option>
+                            <option value="cash">Cash</option>
+                            <option value="ewallet">E-Wallet</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="paymentTransactionId" class="block text-gray-700 text-sm font-bold mb-2">Transaction ID (Optional):</label>
+                        <input type="text" id="paymentTransactionId" name="transaction_id" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div class="mb-4">
+                        <label for="paymentStatus" class="block text-gray-700 text-sm font-bold mb-2">Status:</label>
+                        <select id="paymentStatus" name="status" required class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end mt-6 pt-4 border-t">
+                    <button type="button" onclick="closeModal()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg mr-2 focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
+                        Save Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script>
+        const API_BASE_URL = '/admin';
+        const paymentModal = document.getElementById('paymentModal');
+        const paymentForm = document.getElementById('paymentForm');
+        const modalTitle = document.getElementById('modalTitle');
+        const paymentIdInput = document.getElementById('paymentId');
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.textContent = message;
+            toast.className = 'toast show' + (isError ? ' error' : '');
+            setTimeout(() => {
+                toast.className = toast.className.replace('show', '');
+            }, 3000);
+        }
+
+        function openCreateModal() {
+            paymentForm.reset();
+            paymentIdInput.value = '';
+            modalTitle.textContent = 'Create New Payment';
+            document.getElementById('paymentMethod').value = "credit_card";
+            document.getElementById('paymentStatus').value = "pending";
+            paymentModal.style.display = 'block';
+        }
+
+        async function openEditModal(id) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/payments/${id}`);
+                if (!response.ok) throw new Error(`Failed to fetch payment: ${response.statusText}`);
+                const payment = await response.json();
+
+                paymentForm.reset();
+                paymentIdInput.value = payment.id;
+                document.getElementById('paymentOrderId').value = payment.order_id;
+                document.getElementById('paymentAmount').value = payment.amount;
+                document.getElementById('paymentMethod').value = payment.payment_method;
+                document.getElementById('paymentTransactionId').value = payment.transaction_id || '';
+                document.getElementById('paymentStatus').value = payment.status;
+                
+                modalTitle.textContent = 'Edit Payment';
+                paymentModal.style.display = 'block';
+            } catch (error) {
+                console.error('Error opening edit modal:', error);
+                showToast(`Error: ${error.message}`, true);
+            }
+        }
+
+        function closeModal() {
+            paymentModal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == paymentModal) {
+                closeModal();
+            }
+        }
+
+        async function fetchPayments() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/payments/`);
+                if (!response.ok) throw new Error('Failed to fetch payments');
+                const payments = await response.json();
+                renderPaymentsTable(payments);
+            } catch (error) {
+                console.error('Error fetching payments:', error);
+                showToast(`Error fetching payments: ${error.message}`, true);
+            }
+        }
+        
+        function getStatusClass(status) {
+            switch (status) {
+                case 'pending': return 'status-pending';
+                case 'completed': return 'status-completed';
+                case 'failed': return 'status-failed';
+                default: return 'bg-gray-200 text-gray-800';
+            }
+        }
+
+        function renderPaymentsTable(payments) {
+            const tableBody = document.getElementById('paymentsTableBody');
+            tableBody.innerHTML = ''; 
+
+            if (!payments || payments.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No payments found.</td></tr>';
+                return;
+            }
+
+            payments.forEach(payment => {
+                const row = tableBody.insertRow();
+                row.className = 'hover:bg-gray-50 transition duration-150 ease-in-out';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${payment.id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${payment.order_id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${parseFloat(payment.amount).toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${payment.payment_method.replace('_', ' ')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">${payment.transaction_id || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span class="status-badge ${getStatusClass(payment.status)}">
+                            ${payment.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="openEditModal(${payment.id})" class="text-indigo-600 hover:text-indigo-900 mr-3 transition duration-150 ease-in-out">Edit</button>
+                        <button onclick="deletePayment(${payment.id})" class="text-red-600 hover:text-red-900 transition duration-150 ease-in-out">Delete</button>
+                    </td>
+                `;
+            });
+        }
+
+        paymentForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(paymentForm);
+            const id = formData.get('paymentId');
+            
+            const data = {
+                order_id: parseInt(formData.get('order_id')),
+                amount: parseFloat(formData.get('amount')),
+                payment_method: formData.get('payment_method'),
+                transaction_id: formData.get('transaction_id') || null, // Send null if empty
+                status: formData.get('status')
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_BASE_URL}/payments/${id}` : `${API_BASE_URL}/payments/`;
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `Failed to ${id ? 'update' : 'create'} payment`);
+                }
+
+                closeModal();
+                fetchPayments(); 
+                showToast(`Payment ${id ? 'updated' : 'created'} successfully!`);
+            } catch (error) {
+                console.error(`Error ${id ? 'updating' : 'creating'} payment:`, error);
+                showToast(`Error: ${error.message}`, true);
+            }
+        });
+
+        async function deletePayment(id) {
+            if (confirm('Are you sure you want to delete this payment record? This action cannot be undone.')) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/payments/${id}`, { method: 'DELETE' });
+                     if (!response.ok) {
+                         if (response.status === 204) { 
+                            fetchPayments();
+                            showToast('Payment record deleted successfully!');
+                            return;
+                        }
+                        const errorData = await response.json().catch(() => null); 
+                        throw new Error(errorData?.detail || `Failed to delete payment. Status: ${response.status}`);
+                    }
+                    fetchPayments();
+                    showToast('Payment record deleted successfully!');
+                } catch (error) {
+                    console.error('Error deleting payment:', error);
+                    showToast(`Error: ${error.message}`, true);
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchPayments);
+    </script>
+</body>
+</html>
