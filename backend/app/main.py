@@ -104,6 +104,14 @@ async def get_admin_repairshop_management(request: Request):
 async def get_admin_service_management(request: Request):
     return templates.TemplateResponse("admin/service_management.html", {"request": request})
 
+@app.get("/admin/order_management") 
+async def get_admin_order_management(request: Request):
+    return templates.TemplateResponse("admin/order_management.html", {"request": request})
+
+@app.get("/admin/payment_management") 
+async def get_admin_payment_management(request: Request):
+    return templates.TemplateResponse("admin/payment_management.html", {"request": request})
+
 @app.get("/repairshop/dashboard")
 async def get_repairshop_dashboard(request: Request):
     return templates.TemplateResponse("repairshop/dashboard.html", {"request": request})
