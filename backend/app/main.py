@@ -1,8 +1,6 @@
-# backend/app/main.py
-
 from fastapi import FastAPI, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles  # <-- Import dòng này
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.db.database import engine, Base
@@ -21,21 +19,14 @@ app = FastAPI(
 # 3. CORS Middleware (cho phép frontend truy cập API)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   
+    allow_origins=["*"],  # Cân nhắc giới hạn lại khi triển khai
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- Thêm phần này để phục vụ các file tĩnh (CSS, JS, images, v.v.) ---
-# Giả sử các file tĩnh của bạn nằm trong thư mục 'backend/frontend/static'
-# URL sẽ là /static/<tên_file_cua_ban>
-app.mount("/static", StaticFiles(directory="../frontend/static"), name="static")
-# --------------------------------------------------------------------
-
 # 5. Thiết lập template engine
-# Đảm bảo đường dẫn này đúng với vị trí thư mục 'frontend' bên trong 'backend'
-templates = Jinja2Templates(directory="../frontend")
+templates = Jinja2Templates(directory="frontend")
 
 # 6. Đăng ký routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
@@ -43,7 +34,7 @@ app.include_router(admin.router, prefix="/admin", tags=["Admin"])
 app.include_router(user.router, prefix="/users", tags=["Users"])
 app.include_router(repairshop.router, prefix="/repairshop", tags=["Repair Shops"])
 
-# 7. Các routes trả về trang HTML của bạn (không thay đổi)
+# 7. Route mặc định trả về trang chủ
 @app.get("/")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -83,7 +74,7 @@ async def get_repairshop_info(request: Request):
 @app.get("/user/dashboard")
 async def get_user_dashboard(request: Request):
     return templates.TemplateResponse("user/dashboard.html", {"request": request})
-
+# 
 @app.get("/user/booking")
 async def booking(request: Request, shop_id: int = Query(...), service_ids: str = Query(...)):
     return templates.TemplateResponse("user/booking.html", {
