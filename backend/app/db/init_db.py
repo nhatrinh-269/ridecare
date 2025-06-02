@@ -5,10 +5,11 @@ from datetime import datetime, timedelta
 import random
 
 # --- Hằng số và cấu hình ---
-# (Trong thực tế, bạn có thể muốn tạo user với vai trò 'repair_shop' cụ thể hơn)
-# Giả sử chúng ta sẽ tạo 5 chủ shop và phân bổ các shop cho họ
-SHOP_OWNER_USERNAMES = ["shopowner1", "shopowner2", "shopowner3", "shopowner4", "shopowner5"]
-NORMAL_USER_USERNAMES = ["user1", "user2", "user3", "user4", "user5", "user6", "user7", "user8", "user9", "user10"]
+SHOP_OWNER_USERNAMES = ["shopowner1", "shopowner2", "shopowner3", "shopowner4", "shopowner5", 
+                        "shopowner6", "shopowner7", "shopowner8", "shopowner9", "shopowner10",
+                        "shopowner11", "shopowner12", "shopowner13"] # Đảm bảo đủ chủ shop cho 13 shop
+NORMAL_USER_USERNAMES = ["user1", "user2", "user3", "user4", "user5", "user6", "user7", "user8", "user9", "user10",
+                         "user11", "user12", "user13", "user14", "user15"] # Tăng số lượng user thường
 
 # Mật khẩu mẫu (KHÔNG DÙNG CHO PRODUCTION)
 DEFAULT_PASSWORD_PLAIN = "string" 
@@ -53,11 +54,10 @@ def create_users(db: Session):
         db.commit()
         print(f"Đã tạo {len(users_to_create)} người dùng mới.")
         for user in users_to_create:
-            db.refresh(user) # Để lấy ID sau khi tạo
+            db.refresh(user) 
     else:
         print("Người dùng mẫu đã tồn tại.")
     
-    # Trả về danh sách các user đã được tạo hoặc đã tồn tại để sử dụng sau này
     all_users = {
         "admin": db.query(models.User).filter(models.User.username == "admin").first(),
         "shop_owners": [db.query(models.User).filter(models.User.username == u).first() for u in SHOP_OWNER_USERNAMES],
@@ -66,13 +66,22 @@ def create_users(db: Session):
     return all_users
 
 
-def create_repair_shops(db: Session, shop_owners: list):
+def create_repair_shops(db: Session, shop_owners_all: list): # Đổi tên tham số để rõ ràng hơn
     print("Đang tạo cửa hàng mẫu...")
-    if not shop_owners or all(owner is None for owner in shop_owners):
-        print("Không có chủ sở hữu cửa hàng hợp lệ. Bỏ qua tạo cửa hàng.")
+    
+    # Lọc ra các shop_owners hợp lệ (đã được tạo và có role 'repair_shop')
+    # và chưa sở hữu cửa hàng nào
+    available_shop_owners = []
+    for owner in shop_owners_all:
+        if owner and owner.role == "repair_shop":
+            existing_shop = db.query(models.RepairShop).filter(models.RepairShop.user_id == owner.id).first()
+            if not existing_shop:
+                available_shop_owners.append(owner)
+
+    if not available_shop_owners:
+        print("Không có chủ sở hữu (vai trò 'repair_shop') hợp lệ và chưa có shop. Bỏ qua tạo cửa hàng.")
         return []
 
-    # Dữ liệu cửa hàng bạn cung cấp
     shops_raw_data = [
         {"STT":1, "Tên tiệm sửa":"Sửa xe Tuấn", "Dịch vụ":"- Dịch vụ sửa chữa và bảo dưỡng xe máy tiêu chuẩn, bao gồm động cơ, phanh, và điện, thay lốp, bảo dưỡng định kỳ", "Longtitude - Kinh độ":108.2542723, "Latitude - vĩ độ":15.97729124, "Giờ hoạt động":"07:30–17:00", "Số điện thoại":"0906 485 248"},
         {"STT":2, "Tên tiệm sửa":"Tiệm Sửa Xe Chuyên Nghiệp Honda 69", "Dịch vụ":"- Dịch vụ sửa chữa, bảo dưỡng, và phụ tùng chính hãng cho xe Honda", "Longtitude - Kinh độ":108.254959, "Latitude - vĩ độ":15.97807513, "Giờ hoạt động":"07:00–18:00", "Số điện thoại":"0905 797 402"},
@@ -90,29 +99,38 @@ def create_repair_shops(db: Session, shop_owners: list):
     ]
 
     shops_to_create = []
-    owner_idx = 0
-    for data in shops_raw_data:
-        if not db.query(models.RepairShop).filter(models.RepairShop.name == data["Tên tiệm sửa"]).first():
-            # Đảm bảo có đủ chủ shop, nếu không sẽ lặp lại từ đầu danh sách chủ shop
-            current_owner = shop_owners[owner_idx % len(shop_owners)] if shop_owners else None
-            if not current_owner: 
-                print(f"Không có chủ sở hữu hợp lệ để gán cho shop {data['Tên tiệm sửa']}, bỏ qua.")
-                continue
+    # Giới hạn số lượng shop tạo ra bằng số lượng chủ shop hợp lệ còn trống hoặc số lượng shop trong raw_data
+    num_shops_to_create_max = min(len(shops_raw_data), len(available_shop_owners))
+    
+    used_owner_ids = set() # Theo dõi các owner_id đã được sử dụng trong lần chạy này
 
-            description_with_hours = f"{data['Dịch vụ']}. Giờ hoạt động: {data['Giờ hoạt động']}"
+    for i in range(num_shops_to_create_max):
+        shop_data_raw = shops_raw_data[i]
+        current_owner = available_shop_owners[i] # Lấy owner tương ứng
+
+        # Chỉ tạo shop nếu tên shop chưa tồn tại VÀ owner này chưa được gán shop
+        if not db.query(models.RepairShop).filter(models.RepairShop.name == shop_data_raw["Tên tiệm sửa"]).first() and \
+           current_owner.id not in used_owner_ids:
+            
+            description_with_hours = f"{shop_data_raw['Dịch vụ']}. Giờ hoạt động: {shop_data_raw['Giờ hoạt động']}"
             
             shops_to_create.append(models.RepairShop(
                 user_id=current_owner.id,
-                name=data["Tên tiệm sửa"],
-                address=f"Địa chỉ của {data['Tên tiệm sửa']}, Khu vực {current_owner.username}", 
-                phone=data["Số điện thoại"],
+                name=shop_data_raw["Tên tiệm sửa"],
+                address=f"Địa chỉ của {shop_data_raw['Tên tiệm sửa']}, Khu vực {current_owner.username}", 
+                phone=shop_data_raw["Số điện thoại"],
                 description=description_with_hours,
                 approved=True, 
-                rating_avg=round(random.uniform(3.5, 5.0), 1), 
-                latitude=data["Latitude - vĩ độ"],
-                longitude=data["Longtitude - Kinh độ"]
+                rating_avg=round(random.uniform(3.8, 4.9), 1), # Rating ngẫu nhiên cao hơn một chút
+                latitude=shop_data_raw["Latitude - vĩ độ"],
+                longitude=shop_data_raw["Longtitude - Kinh độ"]
             ))
-            owner_idx += 1
+            used_owner_ids.add(current_owner.id) # Đánh dấu owner này đã được sử dụng
+        else:
+            if current_owner.id in used_owner_ids:
+                 print(f"Chủ sở hữu {current_owner.username} (ID: {current_owner.id}) đã được gán cho một cửa hàng trong lần chạy này. Bỏ qua tạo shop '{shop_data_raw['Tên tiệm sửa']}'.")
+            else:
+                 print(f"Cửa hàng '{shop_data_raw['Tên tiệm sửa']}' đã tồn tại. Bỏ qua.")
             
     if shops_to_create:
         db.add_all(shops_to_create)
@@ -121,7 +139,7 @@ def create_repair_shops(db: Session, shop_owners: list):
         for shop in shops_to_create:
             db.refresh(shop)
     else:
-        print("Các cửa hàng mẫu đã tồn tại hoặc không có chủ sở hữu hợp lệ.")
+        print("Không có cửa hàng mới nào được tạo (có thể đã tồn tại hoặc không đủ chủ sở hữu hợp lệ/chưa có shop).")
     
     return db.query(models.RepairShop).all()
 
@@ -143,13 +161,19 @@ def create_services(db: Session, shops: list):
     ]
 
     for shop in shops:
-        if db.query(models.Service).filter(models.Service.repair_shop_id == shop.id).count() == 0:
-            # Thêm tất cả các dịch vụ phổ biến cho mỗi shop
+        # Chỉ tạo dịch vụ nếu shop chưa có đủ số lượng dịch vụ mẫu
+        existing_services_count = db.query(models.Service).filter(models.Service.repair_shop_id == shop.id).count()
+        if existing_services_count < len(common_services_data):
             for service_data in common_services_data:
-                services_to_create.append(models.Service(
-                    repair_shop_id=shop.id,
-                    **service_data
-                ))
+                existing_service = db.query(models.Service).filter(
+                    models.Service.repair_shop_id == shop.id,
+                    models.Service.name == service_data["name"]
+                ).first()
+                if not existing_service:
+                    services_to_create.append(models.Service(
+                        repair_shop_id=shop.id,
+                        **service_data
+                    ))
     
     if services_to_create:
         db.add_all(services_to_create)
@@ -170,28 +194,44 @@ def create_orders_and_payments(db: Session, normal_users: list, services: list, 
     orders_to_create = []
     payments_to_create = []
     
-    # Tạo khoảng 30-50 đơn hàng mẫu
-    for _ in range(random.randint(30, 50)):
+    num_orders_to_create = random.randint(70, 120) # Tăng số lượng đơn hàng
+    print(f"Dự kiến tạo {num_orders_to_create} đơn hàng...")
+
+    for _ in range(num_orders_to_create):
         user = random.choice(normal_users)
-        # Chọn một shop ngẫu nhiên, sau đó chọn một dịch vụ của shop đó
         shop = random.choice(shops)
-        shop_services = [s for s in services if s.repair_shop_id == shop.id]
+        shop_services = [s for s in services if s.repair_shop_id == shop.id and s.is_available] 
         if not shop_services:
-            continue # Shop này không có dịch vụ nào được tạo
+            continue 
         service = random.choice(shop_services)
 
-        if user and service and shop: # Đảm bảo tất cả đều hợp lệ
+        if user and service and shop: 
             order_status = random.choice([s.value for s in models.OrderStatus.__members__.values()])
-            scheduled_datetime = datetime.utcnow() + timedelta(days=random.randint(1, 14), hours=random.randint(0,23), minutes=random.choice([0, 15, 30, 45]))
+            order_date_dt = datetime.utcnow() - timedelta(days=random.randint(0, 90), hours=random.randint(0,23), minutes=random.randint(0,59))
             
+            scheduled_datetime = None
+            completed_datetime = None
+
+            if order_status not in ["completed", "cancelled"]:
+                scheduled_datetime = order_date_dt + timedelta(days=random.randint(1, 20), hours=random.randint(0,23), minutes=random.choice([0, 15, 30, 45]))
+            
+            if order_status == "completed":
+                # Đảm bảo completed_date sau order_date và scheduled_date (nếu có)
+                base_completion_date = scheduled_datetime if scheduled_datetime else order_date_dt
+                completed_datetime = base_completion_date + timedelta(hours=service.duration // 60, minutes=service.duration % 60 + random.randint(5,60))
+                # Nếu scheduled_date không có, đảm bảo completed_date sau order_date
+                if not scheduled_datetime and completed_datetime < order_date_dt:
+                    completed_datetime = order_date_dt + timedelta(hours=service.duration // 60, minutes=service.duration % 60 + random.randint(5,60))
+
+
             order_data = {
                 "user_id": user.id,
                 "service_id": service.id,
                 "repair_shop_id": shop.id,
                 "status": order_status,
-                "order_date": datetime.utcnow() - timedelta(days=random.randint(0, 60), hours=random.randint(0,23)),
-                "scheduled_date": scheduled_datetime if order_status not in ["completed", "cancelled"] else None,
-                "completed_date": scheduled_datetime + timedelta(hours=service.duration // 60, minutes=service.duration % 60 + random.randint(5,30)) if order_status == "completed" else None
+                "order_date": order_date_dt,
+                "scheduled_date": scheduled_datetime,
+                "completed_date": completed_datetime
             }
             new_order = models.Order(**order_data)
             orders_to_create.append(new_order)
@@ -202,17 +242,23 @@ def create_orders_and_payments(db: Session, normal_users: list, services: list, 
         print(f"Đã tạo {len(orders_to_create)} đơn hàng mới.")
         for order in orders_to_create:
             db.refresh(order)
-            # Lấy lại service object để có giá chính xác (nếu service được refresh)
             service_for_payment = db.query(models.Service).filter(models.Service.id == order.service_id).first()
             if not service_for_payment: continue
 
-            if order.status not in ["pending", "cancelled"] or random.choice([True, False, False]): 
+            # Tăng xác suất tạo payment, đặc biệt cho các order không bị cancelled
+            if order.status != "cancelled" and (order.status != "pending" or random.choice([True, False])): 
+                payment_status = "completed"
+                if order.status == "pending" and random.random() < 0.7: # 70% payment cho pending order là pending
+                    payment_status = "pending"
+                elif order.status != "completed" and random.random() < 0.15: # 15% payment cho các order khác (không phải completed) là failed
+                    payment_status = "failed"
+                
                 payment_data = {
                     "order_id": order.id,
                     "amount": service_for_payment.price, 
                     "payment_method": random.choice([pm.value for pm in models.PaymentMethod.__members__.values()]),
-                    "transaction_id": f"RIDECARE-{order.id}-{random.randint(10000,99999)}",
-                    "status": "completed" if order.status == "completed" else random.choice(["pending", "completed", "failed"])
+                    "transaction_id": f"RDC-{order.id}-{random.randint(100000,999999)}",
+                    "status": payment_status
                 }
                 new_payment = models.Payment(**payment_data)
                 payments_to_create.append(new_payment)
@@ -236,8 +282,10 @@ def create_reviews(db: Session, normal_users: list, shops: list):
         return
 
     reviews_to_create = []
-    # Tạo khoảng 40-60 reviews
-    for _ in range(random.randint(40, 60)):
+    num_reviews_to_create = random.randint(80, 150) # Tăng số lượng reviews
+    print(f"Dự kiến tạo {num_reviews_to_create} đánh giá...")
+
+    for _ in range(num_reviews_to_create):
         user = random.choice(normal_users)
         shop = random.choice(shops)
         
@@ -261,9 +309,14 @@ def create_reviews(db: Session, normal_users: list, shops: list):
                     "Địa điểm dễ tìm, cửa hàng sạch sẽ và gọn gàng. Nhân viên tư vấn nhiệt tình.",
                     "Phụ tùng thay thế có vẻ chất lượng, xe chạy êm hơn hẳn.",
                     "Giá hơi cao hơn so với một số nơi khác nhưng đáng tiền.",
-                    "Thợ tay nghề cao, bắt bệnh xe chính xác."
+                    "Thợ tay nghề cao, bắt bệnh xe chính xác.",
+                    "Rất ấn tượng với cách làm việc của tiệm.",
+                    "Mọi thứ đều ổn, không có gì để phàn nàn nhiều.",
+                    "Nhân viên lễ tân hơi thiếu nhiệt tình.",
+                    "Đã sửa ở đây nhiều lần, lần nào cũng ưng ý.",
+                    "Shop có nhiều dịch vụ đa dạng, tiện lợi."
                 ]),
-                "created_at": datetime.utcnow() - timedelta(days=random.randint(0, 90))
+                "created_at": datetime.utcnow() - timedelta(days=random.randint(0, 150))
             }
             reviews_to_create.append(models.Review(**review_data))
 
@@ -295,21 +348,25 @@ def create_initial_data(db: Session):
     users_dict = create_users(db)
     
     # Bước 2: Tạo RepairShops
-    valid_shop_owners = [owner for owner in users_dict.get("shop_owners", []) if owner and owner.role == "repair_shop"]
-    if not valid_shop_owners and users_dict.get("admin"):
-         admin_user = users_dict["admin"]
-         if admin_user and admin_user.role == "admin": 
-            print("Không có chủ shop_owner, sử dụng admin làm chủ shop mẫu.")
-            valid_shop_owners = [admin_user]
-
-    all_shops = create_repair_shops(db, valid_shop_owners)
+    valid_shop_owners_from_dict = [owner for owner in users_dict.get("shop_owners", []) if owner and owner.role == "repair_shop"]
+    
+    # Cân nhắc dùng admin làm chủ shop nếu không có shop_owner nào hoặc không đủ
+    admin_user = users_dict.get("admin")
+    if not valid_shop_owners_from_dict and admin_user and admin_user.role == "admin":
+        print("Không có chủ shop (vai trò 'repair_shop') nào được tạo/tìm thấy. Thử sử dụng admin làm chủ shop mẫu.")
+        admin_owns_shop = db.query(models.RepairShop).filter(models.RepairShop.user_id == admin_user.id).first()
+        if not admin_owns_shop:
+            valid_shop_owners_from_dict = [admin_user] # Chỉ dùng admin nếu admin chưa sở hữu shop nào
+        else:
+            print(f"Admin (ID: {admin_user.id}) đã sở hữu một cửa hàng. Không thể dùng admin để tạo thêm shop mẫu.")
+    
+    all_shops = create_repair_shops(db, valid_shop_owners_from_dict)
     
     # Bước 3: Tạo Services
     all_services = create_services(db, all_shops)
     
     # Bước 4: Tạo Orders và Payments
     valid_normal_users = [user for user in users_dict.get("normal_users", []) if user and user.role == "user"]
-    # Đảm bảo all_services và all_shops không rỗng trước khi truyền vào
     if valid_normal_users and all_services and all_shops:
         create_orders_and_payments(db, valid_normal_users, all_services, all_shops)
     else:
@@ -322,3 +379,4 @@ def create_initial_data(db: Session):
         print("Bỏ qua tạo Reviews do thiếu Users hoặc Shops.")
         
     print("Hoàn tất quá trình tạo dữ liệu mẫu.")
+
