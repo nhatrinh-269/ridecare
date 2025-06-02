@@ -26,8 +26,7 @@ app.add_middleware(
 )
 
 # 5. Thiết lập template engine
-app.mount("/static", StaticFiles(directory="../frontend/static"), name="static")
-templates = Jinja2Templates(directory="../frontend")
+templates = Jinja2Templates(directory="frontend")
 
 # 6. Đăng ký routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
