@@ -30,12 +30,12 @@ app.add_middleware(
 # --- Thêm phần này để phục vụ các file tĩnh (CSS, JS, images, v.v.) ---
 # Giả sử các file tĩnh của bạn nằm trong thư mục 'backend/frontend/static'
 # URL sẽ là /static/<tên_file_cua_ban>
-app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
+app.mount("/static", StaticFiles(directory="../frontend/static"), name="static")
 # --------------------------------------------------------------------
 
 # 5. Thiết lập template engine
 # Đảm bảo đường dẫn này đúng với vị trí thư mục 'frontend' bên trong 'backend'
-templates = Jinja2Templates(directory="frontend")
+templates = Jinja2Templates(directory="../frontend")
 
 # 6. Đăng ký routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
