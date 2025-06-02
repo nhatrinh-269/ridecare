@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RideCare — User Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      height: 100vh;
+    }
+    .dashboard-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      padding: 20px;
+    }
+    .dashboard-box {
+      background-color: white;
+      padding: 30px 20px;
+      border-radius: 10px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .logo-container img {
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 20px;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    #user-info p {
+      font-size: 18px;
+      margin-bottom: 30px;
+      color: #555;
+    }
+    .dashboard-links {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .dashboard-button {
+      display: block;
+      padding: 12px;
+      background-color: #007BFF;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .dashboard-button:hover {
+      background-color: #0056b3;
+    }
+    @media (max-width: 600px) {
+      .dashboard-box {
+        padding: 20px 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <div class="dashboard-box">
+      <div class="logo-container">
+          <img src="https://scontent.fdad1-4.fna.fbcdn.net/v/t1.15752-9/485781663_1180107003791424_4465634879995273033_n.png?_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_eui2=AeEdZJhdbKRA0isy-ZixBgW5RZ4qYJYjMZFFnipgliMxkVztkM2YLhaExJC5lZPSfOATCz-ZVw-zeee2KEZ5HKAx&_nc_ohc=5kuakO09S8wQ7kNvwECpKO7&_nc_oc=AdkVlZREQijQDj8y3o35kcVRiHS58mOxe0T5rr4fw33l0rYtocE2V2ph_zRGUw-u07OoCVXg1XuGmneiaJJevMLk&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fdad1-4.fna&oh=03_Q7cD2QF8aZJhAd93rWpbDH21ENWv-0Ppx7qHXD8DZXPEzlpTOg&oe=685B16DD" 
+          alt="RideCare Logo">
+      </div>
+      <h2>User Dashboard</h2>
+      <div id="user-info">
+        <p>Welcome, <span id="username"></span>!</p>
+      </div>
+      <div class="dashboard-links">
+        <a href="search_shops" class="dashboard-button">Search Shops</a>
+        <a href="user_information" class="dashboard-button">User Info</a>
+        <a href="#" id="signOutBtn" class="dashboard-button">Sign Out</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Hàm lấy cookie theo tên
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+      return null;
+    }
+
+    // Lấy username từ cookie, nếu không có thì redirect về login
+    const username = getCookie('username');
+    if (!username) {
+      window.location.href = '../login';
+    } else {
+      document.getElementById('username').textContent = username;
+    }
+
+    // Xử lý đăng xuất: xóa cookie và redirect login
+    document.getElementById('signOutBtn').addEventListener('click', () => {
+      // Xóa cookie bằng cách đặt ngày hết hạn về quá khứ
+      document.cookie = 'username=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      window.location.href = '../login';
+    });
+  </script>
+</body>
+</html>

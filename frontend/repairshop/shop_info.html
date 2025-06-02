@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Shop Info — RideCare</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body class="full-screen">
+  <div class="main-container">
+    <h2 class="content">Edit Shop Information</h2>
+    <form id="infoForm" class="content">
+      <input type="text" id="name" placeholder="Name" required><br><br>
+      <input type="text" id="address" placeholder="Address" required><br><br>
+      <input type="text" id="phone" placeholder="Phone" required><br><br>
+      <textarea id="description" placeholder="Description"></textarea><br><br>
+      <label>
+        Approved:
+        <input type="checkbox" id="approved">
+      </label><br><br>
+      <button type="submit">Save</button>
+    </form>
+  </div>
+
+  <script src="../../js/auth.js"></script>
+  <script src="../../js/repairshop.js"></script>
+  <script>
+    async function populateForm() {
+      const shops = await fetchShopProfile();
+      const shop = shops[0];
+      document.getElementById('name').value = shop.name;
+      document.getElementById('address').value = shop.address;
+      document.getElementById('phone').value = shop.phone;
+      document.getElementById('description').value = shop.description;
+      document.getElementById('approved').checked = shop.approved;
+    }
+
+    document.getElementById('infoForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const shops = await fetchShopProfile();
+      const shop = shops[0];
+      await updateShopProfile({
+        id: shop.id,
+        name: document.getElementById('name').value,
+        address: document.getElementById('address').value,
+        phone: document.getElementById('phone').value,
+        description: document.getElementById('description').value,
+        approved: document.getElementById('approved').checked
+      });
+      alert('Shop info updated');
+    });
+
+    populateForm();
+  </script>
+</body>
+</html>

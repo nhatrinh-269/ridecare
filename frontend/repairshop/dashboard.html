@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Repair Shop Dashboard — RideCare</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f8f9fa;
+    }
+    .main-container {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #007bff;
+    }
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 30px;
+    }
+    .stat-box {
+      text-align: center;
+      padding: 20px;
+      background-color: #e9ecef;
+      border-radius: 10px;
+      width: 30%;
+    }
+    .stat-box h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .charts {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 40px;
+    }
+    canvas {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .nav-buttons {
+      margin-top: 30px;
+      text-align: center;
+    }
+    .nav-buttons button {
+      margin: 0 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .nav-buttons button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="main-container">
+    <h1>Repair Shop Dashboard</h1>
+
+    <div class="stats">
+      <div class="stat-box">
+        <h2 id="total-orders">0</h2>
+        <p>Total Orders</p>
+      </div>
+      <div class="stat-box">
+        <h2 id="total-revenue">₫0</h2>
+        <p>Total Revenue</p>
+      </div>
+      <div class="stat-box">
+        <h2 id="avg-rating">0.0 ★</h2>
+        <p>Average Rating</p>
+      </div>
+    </div>
+
+    <div class="charts">
+      <div>
+        <h3>Order Status</h3>
+        <canvas id="orderStatusChart" width="400" height="300"></canvas>
+      </div>
+      <div>
+        <h3>Revenue by Payment Method</h3>
+        <canvas id="revenueChart" width="400" height="300"></canvas>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button onclick="location.href='order_management.html'">Manage Orders</button>
+      <button onclick="location.href='revenue.html'">View Revenue</button>
+      <button onclick="location.href='shop_info.html'">Edit Shop Info</button>
+    </div>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    const username = getCookie("username") || "unknown_user";
+
+    fetch("/repairshop/stats", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ username: username })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("total-orders").textContent = data.total_orders;
+      document.getElementById("total-revenue").textContent = "₫" + data.total_revenue.toLocaleString();
+      document.getElementById("avg-rating").textContent = data.avg_rating.toFixed(1) + " ★";
+
+      const ctx1 = document.getElementById("orderStatusChart").getContext("2d");
+      new Chart(ctx1, {
+        type: "bar",
+        data: {
+          labels: ["Pending", "Confirmed", "In Progress", "Completed", "Cancelled"],
+          datasets: [{
+            label: "Orders",
+            data: [
+              data.status_counts.pending,
+              data.status_counts.confirmed,
+              data.status_counts.in_progress,
+              data.status_counts.completed,
+              data.status_counts.cancelled
+            ],
+            backgroundColor: ["#ffc107", "#17a2b8", "#6f42c1", "#28a745", "#dc3545"]
+          }]
+        }
+      });
+
+      const ctx2 = document.getElementById("revenueChart").getContext("2d");
+      new Chart(ctx2, {
+        type: "pie",
+        data: {
+          labels: ["Credit Card", "Cash", "E-Wallet"],
+          datasets: [{
+            data: [
+              data.revenue_by_method.credit_card,
+              data.revenue_by_method.cash,
+              data.revenue_by_method.ewallet
+            ],
+            backgroundColor: ["#007bff", "#ffc107", "#28a745"]
+          }]
+        }
+      });
+    })
+    .catch(error => console.error("Failed to load dashboard data:", error));
+  </script>
+</body>
+</html>

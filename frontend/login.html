@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RideCare — Login</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      height: 100vh;
+    }
+
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      padding: 20px;
+    }
+
+    .login-box {
+      background-color: white;
+      padding: 30px 20px;
+      border-radius: 10px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo-container img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .login-button {
+      width: 100%;
+      padding: 10px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .login-button:hover {
+      background-color: #0056b3;
+    }
+
+    .signup-link {
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .signup-link a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+
+    .signup-link a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 600px) {
+      .login-box {
+        padding: 20px 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-box">
+      <div class="logo-container">
+          <img src="https://scontent.fdad1-4.fna.fbcdn.net/v/t1.15752-9/485781663_1180107003791424_4465634879995273033_n.png?_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_eui2=AeEdZJhdbKRA0isy-ZixBgW5RZ4qYJYjMZFFnipgliMxkVztkM2YLhaExJC5lZPSfOATCz-ZVw-zeee2KEZ5HKAx&_nc_ohc=5kuakO09S8wQ7kNvwECpKO7&_nc_oc=AdkVlZREQijQDj8y3o35kcVRiHS58mOxe0T5rr4fw33l0rYtocE2V2ph_zRGUw-u07OoCVXg1XuGmneiaJJevMLk&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fdad1-4.fna&oh=03_Q7cD2QF8aZJhAd93rWpbDH21ENWv-0Ppx7qHXD8DZXPEzlpTOg&oe=685B16DD" 
+          alt="RideCare Logo">
+      </div>
+
+      <form id="loginForm">
+        <div class="input-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Enter your username" required>
+        </div>
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="login-button">Login</button>
+      </form>
+
+      <p class="signup-link">
+        Don’t have an account? <a href="signup">Sign Up</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    function setCookie(name, value, days) {
+      const expires = new Date(Date.now() + (days * 864e5)).toUTCString();
+      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          return alert(data.detail || 'Login failed');
+        }
+
+        // Save info to cookies
+        setCookie('username', data.username, 7);
+        setCookie('role', data.role, 7);
+        if (data.access_token) {
+          setCookie('access_token', data.access_token, 7);
+        }
+
+        // Redirect based on role
+        switch (data.role) {
+          case 'admin':
+            window.location.href = 'admin/dashboard';
+            break;
+          case 'repair_shop':
+            window.location.href = 'repairshop/dashboard';
+            break;
+          case 'user':
+            window.location.href = 'user/dashboard';
+            break;
+          default:
+            alert('Unknown role');
+        }
+
+      } catch (err) {
+        console.error(err);
+        alert('Something went wrong. Try again.');
+      }
+    });
+  </script>
+
+</body>
+</html>

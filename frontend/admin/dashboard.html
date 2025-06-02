@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard — RideCare</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background-color: #f1f3f5;
+    }
+
+    .header {
+      background-color: #007BFF;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 30px;
+    }
+
+    .header h1 {
+      margin: 0;
+    }
+
+    .header img {
+      height: 50px;
+      border-radius: 5px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+
+    .panel-title {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: #343a40;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 40px;
+    }
+
+    .stat-box {
+  text-align: center;
+  padding: 20px;
+  background-color: #e9ecef;
+  border-radius: 10px;
+  width: 30%;
+  margin: 0 10px; /* <-- thêm dòng này */
+}
+
+    .stat-box h2 {
+      font-size: 28px;
+      margin: 0;
+      color: #007BFF;
+    }
+
+    .stat-box span {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .buttons {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .buttons button {
+      margin: 10px;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .buttons button:hover {
+      background-color: #0056b3;
+    }
+
+    canvas {
+      margin: 0 auto;
+      display: block;
+      max-width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .stat-box {
+        flex: 1 1 45%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stat-box {
+        flex: 1 1 100%;
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header img {
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>RideCare Admin Dashboard</h1>
+    <img src="https://scontent.fdad1-4.fna.fbcdn.net/v/t1.15752-9/485781663_1180107003791424_4465634879995273033_n.png?_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_eui2=AeEdZJhdbKRA0isy-ZixBgW5RZ4qYJYjMZFFnipgliMxkVztkM2YLhaExJC5lZPSfOATCz-ZVw-zeee2KEZ5HKAx&_nc_ohc=5kuakO09S8wQ7kNvwECpKO7&_nc_oc=AdkVlZREQijQDj8y3o35kcVRiHS58mOxe0T5rr4fw33l0rYtocE2V2ph_zRGUw-u07OoCVXg1XuGmneiaJJevMLk&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fdad1-4.fna&oh=03_Q7cD2QF8aZJhAd93rWpbDH21ENWv-0Ppx7qHXD8DZXPEzlpTOg&oe=685B16DD" 
+    alt="RideCare Logo">
+  </div>
+
+  <div class="container">
+
+    <!-- Điều hướng -->
+    <div class="panel">
+      <div class="panel-title">Quick Navigation</div>
+      <div class="buttons">
+        <button onclick="location.href='account_management.html'">Manage Users</button>
+        <button onclick="location.href='repairshop_management.html'">Manage Repair Shops</button>
+        <button onclick="location.href='service_management.html'">Manage Services</button>
+        <button onclick="location.href='order_management.html'">Manage Orders</button>
+        <button onclick="location.href='payment_management.html'">Manage Payments</button>
+      </div>
+    </div>
+
+    <!-- Panel Thống kê -->
+    <div class="panel">
+      <div class="panel-title">Overview Statistics</div>
+      <div class="stats">
+        <div class="stat-box">
+          <h2 id="user-count">0</h2>
+          <span>Total Users</span>
+        </div>
+        <div class="stat-box">
+          <h2 id="shop-count">0</h2>
+          <span>Total Repair Shops</span>
+        </div>
+        <div class="stat-box">
+          <h2 id="service-count">0</h2>
+          <span>Total Services</span>
+        </div>
+        <div class="stat-box">
+          <h2 id="order-count">0</h2>
+          <span>Total Orders</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel biểu đồ đơn hàng -->
+    <div class="panel">
+      <div class="panel-title">Order Status Overview</div>
+      <canvas id="orderChart" height="150"></canvas>
+    </div>
+
+    <!-- Panel biểu đồ thanh toán -->
+    <div class="panel">
+      <div class="panel-title">Revenue by Payment Method</div>
+      <canvas id="paymentChart" height="150"></canvas>
+    </div>
+
+  </div>
+
+  <!-- Script gọi API và tạo biểu đồ -->
+  <script>
+    fetch("/admin/stats")
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("user-count").textContent = data.total_users;
+        document.getElementById("shop-count").textContent = data.total_shops;
+        document.getElementById("service-count").textContent = data.total_services;
+        document.getElementById("order-count").textContent = data.total_orders;
+
+        const ctx1 = document.getElementById("orderChart").getContext("2d");
+        new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels: ['Pending', 'Confirmed', 'In Progress', 'Completed', 'Cancelled'],
+            datasets: [{
+              label: 'Orders by Status',
+              data: [
+                data.orders_by_status.pending,
+                data.orders_by_status.confirmed,
+                data.orders_by_status.in_progress,
+                data.orders_by_status.completed,
+                data.orders_by_status.cancelled
+              ],
+              backgroundColor: [
+                '#ffc107', '#17a2b8', '#6f42c1', '#28a745', '#dc3545'
+              ]
+            }]
+          }
+        });
+
+        const ctx2 = document.getElementById("paymentChart").getContext("2d");
+        new Chart(ctx2, {
+          type: 'pie',
+          data: {
+            labels: ['Credit Card', 'Cash', 'E-Wallet'],
+            datasets: [{
+              label: 'Revenue',
+              data: [
+                data.revenue_by_method.credit_card,
+                data.revenue_by_method.cash,
+                data.revenue_by_method.ewallet
+              ],
+              backgroundColor: ['#007bff', '#ffc107', '#28a745']
+            }]
+          }
+        });
+      })
+      .catch(err => {
+        console.error("Error loading dashboard:", err);
+      });
+  </script>
+</body>
+</html>

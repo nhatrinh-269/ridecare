@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Đặt dịch vụ - Booking</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #main-container {
+      max-width: 600px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      box-sizing: border-box;
+      flex-grow: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .panel {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    h2, h3 {
+      color: #333;
+      margin-top: 0;
+    }
+    #service-list li {
+      margin-bottom: 0.5rem;
+    }
+    form label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+    form input[type="text"],
+    form input[type="tel"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
+    #fixed-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 0.75rem 1rem;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      box-sizing: border-box;
+      border-top: 1px solid #ddd;
+    }
+    button {
+      flex: 1;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+    #back-btn {
+      background-color: #6c757d;
+      color: white;
+    }
+    #back-btn:hover {
+      background-color: #5a6268;
+    }
+    #payment-btn {
+      background-color: #007bff;
+      color: white;
+    }
+    #payment-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    #payment-btn:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+    p.status {
+      color: #666;
+      font-style: italic;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="main-container">
+    <div class="panel" id="user-panel">
+      <h3>Người đặt</h3>
+      <p id="user-info" class="status">Đang tải thông tin người dùng...</p>
+    </div>
+    <div class="panel" id="shop-panel">
+      <h3>Cửa hàng</h3>
+      <p id="shop-info" class="status">Đang tải thông tin cửa hàng...</p>
+    </div>
+    <div class="panel" id="services-panel">
+      <h3>Dịch vụ đã chọn</h3>
+      <ul id="service-list" class="status">Đang tải dịch vụ...</ul>
+    </div>
+    <div class="panel" id="contact-panel">
+      <h3>Thông tin liên hệ</h3>
+      <form id="contact-form" onsubmit="return false;">
+        <label for="address">Địa chỉ hiện tại:</label>
+        <input type="text" id="address" name="address" placeholder="Nhập địa chỉ hiện tại" required />
+
+        <label for="phone">Số điện thoại:</label>
+        <input type="tel" id="phone" name="phone" placeholder="Nhập số điện thoại" pattern="[0-9+(). -]{7,15}" required />
+      </form>
+    </div>
+  </div>
+
+  <div id="fixed-footer">
+    <button id="back-btn" type="button">Quay lại</button>
+    <button id="payment-btn" disabled type="button">Thanh toán</button>
+  </div>
+
+  <script>
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    async function loadBookingData() {
+      const username = getCookie("username");
+      if (!username) {
+        alert("Bạn chưa đăng nhập. Vui lòng đăng nhập trước khi đặt dịch vụ.");
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const shopId = params.get("shop_id");
+      const serviceIds = params.get("service_ids");
+
+      if (!shopId || !serviceIds) {
+        alert("Thiếu thông tin cửa hàng hoặc dịch vụ để đặt.");
+        return;
+      }
+
+      const serviceIdsArray = serviceIds.split(",").map(id => id.trim());
+
+      const apiUrl = `/users/preview?username=${encodeURIComponent(username)}&shop_id=${shopId}` +
+                     serviceIdsArray.map(id => `&service_ids=${encodeURIComponent(id)}`).join("");
+
+      try {
+        const res = await fetch(apiUrl, { credentials: 'include' });
+        if (!res.ok) throw new Error(`Lỗi ${res.status}: ${res.statusText}`);
+
+        const data = await res.json();
+
+        document.getElementById("user-info").textContent = `Người đặt: ${data.user.username} (${data.user.email})`;
+        document.getElementById("shop-info").textContent = `Cửa hàng: ${data.shop.name} - ${data.shop.address}`;
+
+        const list = document.getElementById("service-list");
+        list.classList.remove("status");
+        list.innerHTML = "";
+        data.services.forEach(s => {
+          const li = document.createElement("li");
+          li.textContent = `${s.name} - ${s.price.toLocaleString()} VND (${s.duration} phút)`;
+          list.appendChild(li);
+        });
+
+      } catch (error) {
+        alert("Lỗi khi tải thông tin booking: " + error.message);
+        document.getElementById("user-info").textContent = "";
+        document.getElementById("shop-info").textContent = "";
+        document.getElementById("service-list").textContent = "";
+      }
+    }
+
+    const addressInput = document.getElementById("address");
+    const phoneInput = document.getElementById("phone");
+    const paymentBtn = document.getElementById("payment-btn");
+    const backBtn = document.getElementById("back-btn");
+
+    function checkFormValidity() {
+      const address = addressInput.value.trim();
+      const phone = phoneInput.value.trim();
+      if (address !== "" && phone !== "") {
+        paymentBtn.disabled = false;
+      } else {
+        paymentBtn.disabled = true;
+      }
+    }
+
+    addressInput.addEventListener("input", checkFormValidity);
+    phoneInput.addEventListener("input", checkFormValidity);
+
+    paymentBtn.onclick = () => {
+      if (paymentBtn.disabled) return;
+
+      const address = addressInput.value.trim();
+      const phone = phoneInput.value.trim();
+
+      const params = new URLSearchParams(window.location.search);
+      const shopId = params.get("shop_id");
+      const serviceIds = params.get("service_ids");
+
+      const url = `/user/payment?shop_id=${shopId}&service_ids=${serviceIds}` +
+                  `&address=${encodeURIComponent(address)}` +
+                  `&phone=${encodeURIComponent(phone)}`;
+
+      window.location.href = url;
+    };
+
+    backBtn.onclick = () => {
+      const params = new URLSearchParams(window.location.search);
+      const shopId = params.get("shop_id");
+      if (shopId) {
+        window.location.href = `/user/shop_details/info?id=${shopId}`;
+      } else {
+        window.history.back();
+      }
+    };
+
+    window.onload = loadBookingData;
+  </script>
+</body>
+</html>

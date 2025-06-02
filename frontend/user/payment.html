@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Thanh toán</title>
+  <style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background-color: #f5f5f5;
+  height: 100vh;
+  display: flex;
+  justify-content: center;   /* căn giữa ngang */
+  align-items: center;       /* căn giữa dọc */
+  overflow: hidden;
+}
+
+#main-container {
+  width: 100%;
+  max-width: 600px;          /* giới hạn chiều ngang container */
+  max-height: 90vh;          /* giới hạn chiều cao */
+  padding: 1.5rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;          /* scroll dọc nếu vượt quá chiều cao */
+  background: transparent;   /* hoặc màu nền khác nếu cần */
+  /* Đảm bảo căn giữa các panel */
+  align-items: center;       /* căn giữa ngang tất cả panel bên trong */
+}
+
+.panel {
+  background: white;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 400px;           /* Giới hạn chiều ngang panel */
+  box-sizing: border-box;
+  text-align: center;         /* Nếu muốn nội dung bên trong cũng căn giữa */
+}
+
+h2, h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+ul {
+  padding-left: 1.25rem;
+  text-align: left;           /* Căn lại text list nếu cần */
+}
+
+.total {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #d9534f;
+  margin-top: 0.5rem;
+}
+
+select {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+
+#fixed-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  padding: 1rem;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: center;
+  box-sizing: border-box;
+  gap: 1rem;
+}
+
+button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #218838;
+}
+
+.info-text {
+  margin: 0.25rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+#back-btn {
+  background-color: #6c757d; /* màu xám cho nút quay lại */
+  color: white;
+}
+  </style>
+</head>
+<body>
+
+  <div id="main-container">
+    <!-- Panel: Dịch vụ -->
+    <div class="panel" id="summary-panel">
+      <h3>Tóm tắt dịch vụ</h3>
+      <ul id="service-summary"></ul>
+      <p class="total" id="total-price">Tổng cộng: ... VND</p>
+    </div>
+
+    <!-- Panel: Thông tin liên hệ -->
+    <div class="panel" id="contact-panel">
+      <h3>Thông tin liên hệ</h3>
+      <p class="info-text"><strong>Địa chỉ:</strong> <span id="address-display"></span></p>
+      <p class="info-text"><strong>Số điện thoại:</strong> <span id="phone-display"></span></p>
+    </div>
+
+    <!-- Panel: Phương thức thanh toán -->
+    <div class="panel">
+      <h3>Phương thức thanh toán</h3>
+      <select id="payment-method">
+        <option value="cash">Thanh toán khi hoàn thành</option>
+        <option value="bank">Chuyển khoản ngân hàng</option>
+        <option value="momo">Ví MoMo</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Nút thanh toán -->
+  <div id="fixed-footer">
+    <button id="back-btn">Quay lại</button>
+    <button id="confirm-btn">Thanh toán</button>
+  </div>
+
+<script>
+ function getParam(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
+
+function formatMoney(vnd) {
+  return parseInt(vnd).toLocaleString("vi-VN") + " VND";
+}
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+async function loadPaymentSummary() {
+  const username = getCookie("username");
+  const shopId = getParam("shop_id");
+  const serviceIds = getParam("service_ids");
+  const address = getParam("address");
+  const phone = getParam("phone");
+  const scheduledDateParam = getParam("scheduled_date"); // Lấy scheduled_date từ URL nếu có
+
+  if (!username || !shopId || !serviceIds || !address || !phone) {
+    alert("Thiếu thông tin thanh toán.");
+    return;
+  }
+
+  // Hiển thị địa chỉ & số điện thoại
+  document.getElementById("address-display").textContent = decodeURIComponent(address);
+  document.getElementById("phone-display").textContent = decodeURIComponent(phone);
+
+  const serviceIdArray = serviceIds.split(",").map(id => id.trim());
+  const apiUrl = `/users/preview?username=${encodeURIComponent(username)}&shop_id=${shopId}` +
+                 serviceIdArray.map(id => `&service_ids=${encodeURIComponent(id)}`).join("");
+
+  try {
+    const res = await fetch(apiUrl, { credentials: 'include' });
+    if (!res.ok) throw new Error("Không thể tải thông tin dịch vụ");
+
+    const data = await res.json();
+    const ul = document.getElementById("service-summary");
+    ul.innerHTML = "";
+
+    let total = 0;
+    data.services.forEach(service => {
+      const li = document.createElement("li");
+      li.textContent = `${service.name} - ${formatMoney(service.price)} (${service.duration} phút)`;
+      total += service.price;
+      ul.appendChild(li);
+    });
+
+    document.getElementById("total-price").textContent = "Tổng cộng: " + formatMoney(total);
+
+    // Sự kiện xác nhận thanh toán
+    document.getElementById("confirm-btn").onclick = async () => {
+      const method = document.getElementById("payment-method").value;
+      const username = getCookie("username");
+      const shopId = getParam("shop_id");
+      const serviceIds = getParam("service_ids");
+      const address = decodeURIComponent(getParam("address"));
+      const phone = decodeURIComponent(getParam("phone"));
+
+      if (!username || !shopId || !serviceIds || !address || !phone) {
+        alert("Thiếu thông tin thanh toán.");
+        return;
+      }
+
+      // Lấy scheduled_date từ param nếu có, nếu không dùng thời gian hiện tại
+      const scheduled_date = scheduledDateParam ? scheduledDateParam : new Date().toISOString();
+
+      // Lấy tổng tiền từ UI
+      const totalText = document.getElementById("total-price").textContent;
+      const amountStr = totalText.replace(/[^\d]/g, '');
+      const amount = parseFloat(amountStr);
+
+      // Lấy service_id đầu tiên để gửi lên backend
+      const serviceId = serviceIds.split(",")[0];
+
+      // Chuẩn bị dữ liệu gửi lên API
+      const bodyData = {
+        username: username,
+        shop_id: parseInt(shopId),
+        service_id: parseInt(serviceId),
+        address: address,
+        phone: phone,
+        scheduled_date: scheduled_date,
+        payment_method: method,
+        amount: amount,
+        transaction_id: null // Có thể thay bằng ID giao dịch thật nếu có
+      };
+
+      try {
+        const res = await fetch("/users/payment", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify(bodyData)
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.detail || "Lỗi thanh toán");
+        }
+
+        alert("Thanh toán thành công bằng " + method + "!\nCảm ơn bạn đã sử dụng dịch vụ.");
+        window.location.href = "/user/dashboard";
+
+      } catch (error) {
+        alert("Thanh toán thất bại: " + error.message);
+      }
+    };
+
+    // Sự kiện quay lại
+    document.getElementById("back-btn").onclick = () => {
+      window.location.href = `/user/booking?shop_id=${shopId}&service_ids=${serviceIds}&address=${encodeURIComponent(address)}&phone=${encodeURIComponent(phone)}` + (scheduledDateParam ? `&scheduled_date=${scheduledDateParam}` : "");
+    };
+
+  } catch (error) {
+    alert("Lỗi khi tải dữ liệu: " + error.message);
+  }
+}
+
+window.onload = loadPaymentSummary;
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Search Shops - RideCare</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+  <style>
+    body, html {
+      margin: 0; padding: 0; height: 100%;
+      font-family: Arial, sans-serif;
+      display: flex; flex-direction: column;
+    }
+    #map {
+      flex-grow: 1;
+      width: 100%;
+      height: 80vh;
+    }
+    .header {
+      background-color: #007BFF;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .back-btn {
+      margin: 10px auto;
+      display: block;
+      width: 200px;
+      padding: 10px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+      text-align: center;
+      text-decoration: none;
+    }
+    .back-btn:hover {
+      background-color: #0056b3;
+    }
+    .popup-shop-name {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+    .popup-shop-info {
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">Search Repair Shops</div>
+  <div id="map"></div>
+  <a href="dashboard" class="back-btn">Back</a>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+  ></script>
+  <script>
+    const DN_COORDS = [16.054407, 108.202167];
+    const map = L.map('map').setView(DN_COORDS, 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    async function loadShops() {
+      try {
+        const res = await fetch('/users/shops');
+        if (!res.ok) throw new Error('Network response was not ok');
+        const shops = await res.json();
+
+        shops.forEach(shop => {
+          if (shop.latitude && shop.longitude) {
+            const marker = L.marker([shop.latitude, shop.longitude]).addTo(map);
+            const popupContent = `
+              <div class="popup-shop-name">${shop.name}</div>
+              <div class="popup-shop-info">📍 ${shop.address}</div>
+              <div class="popup-shop-info">📞 ${shop.phone}</div>
+            `;
+            marker.bindPopup(popupContent);
+          }
+        });
+
+        shops.forEach(shop => {
+          if (shop.latitude && shop.longitude) {
+            const marker = L.marker([shop.latitude, shop.longitude]).addTo(map);
+            const popupContent = `
+              <div class="popup-shop-name">${shop.name}</div>
+              <div class="popup-shop-info">📍 ${shop.address}</div>
+              <div class="popup-shop-info">📞 ${shop.phone}</div>
+            `;
+            marker.bindPopup(popupContent);
+
+            // Thêm sự kiện click vào marker
+            marker.on('click', () => {
+              // Chuyển đến trang chi tiết với id hoặc tham số shop
+              window.location.href = `/user/shop_details/info?id=${shop.id}`;
+            });
+          }
+        });
+
+      } catch (error) {
+        alert('Failed to load shops data: ' + error.message);
+      }
+    }
+
+    loadShops();
+  </script>
+</body>
+</html>

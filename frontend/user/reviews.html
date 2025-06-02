@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Leave Review</title>
+<link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body class="full-screen">
+  <div class="review-container">
+    <h1>Review Service</h1>
+    <p id="confirmationMsg"></p>
+
+    <label for="rating">Rating:</label>
+    <select id="rating">
+      <option value="">Choose...</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+    </select>
+
+    <label for="comment">Comment:</label>
+    <textarea id="comment" rows="4" placeholder="Write your review…"></textarea>
+
+    <button id="submitReview">Submit Review</button>
+    <button id="skipReview" style="margin-top:8px;">Skip & Return to Dashboard</button>
+  </div>
+
+  <script>
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const lastOrder = JSON.parse(localStorage.getItem('lastOrder'));
+
+    if (!currentUser || !lastOrder?.order_id) {
+      alert('Review data missing — redirecting');
+      window.location.href = 'dashboard.html';
+    } else {
+      document.getElementById('confirmationMsg').textContent =
+        `Payment successful for "${lastOrder.name}". Please leave your review or skip.`;
+    }
+
+    document.getElementById('submitReview').onclick = async () => {
+      const rating = Number(document.getElementById('rating').value);
+      const comment = document.getElementById('comment').value.trim();
+      if (!rating || !comment) return alert('Please complete all fields.');
+
+      const payload = {
+        user_id: currentUser.id,
+        repair_shop_id: lastOrder.repair_shop_id,
+        order_id: lastOrder.order_id,
+        rating,
+        comment
+      };
+
+      const res = await fetch('/reviews/', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        localStorage.removeItem('lastOrder');
+        window.location.href = 'dashboard.html';
+      } else {
+        const error = await res.json();
+        alert('Error submitting review: ' + (error.detail || JSON.stringify(error)));
+      }
+    };
+
+    document.getElementById('skipReview').onclick = () => {
+      localStorage.removeItem('lastOrder');
+      window.location.href = 'dashboard.html';
+    };
+  </script>
+</body>
+</html>

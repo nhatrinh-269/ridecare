@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+
+  ridecaredb:
+    build: 
+      context: ../ridecare_db
+      dockerfile: Dockerfile
+    container_name: ridecaredb 
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ridecaredb
+      MYSQL_DATABASE: ridecaredb
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: ridecaredb
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./database:/var/lib/mysql
+    networks:
+      - EXE101c_nw
+
+  ridecare:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ridecare
+    restart: always
+    depends_on:
+      - ridecaredb
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+    networks:
+      - EXE101c_nw
+
+networks:
+  EXE101c_nw:
+    external: true 

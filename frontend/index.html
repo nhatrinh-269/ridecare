@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RideCare</title>
+
+    <style>
+        /* Đặt lại mặc định */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body.full-screen {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f8f9fa;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .dashboard-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            width: 100%;
+        }
+
+        .dashboard-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .logo-container img {
+            width: 80%;
+            max-width: 300px;
+            height: auto;
+            margin-bottom: 1rem;
+            border-radius: 1rem;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        #user-info {
+            margin-bottom: 1.5rem;
+            color: #666;
+        }
+
+        .dashboard-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .dashboard-button {
+            display: block;
+            text-decoration: none;
+            background-color: #007bff;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .dashboard-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Media Queries cho thiết bị lớn hơn */
+        @media (min-width: 768px) {
+            .dashboard-links {
+                flex-direction: row;
+                justify-content: center;
+            }
+
+            .dashboard-button {
+                width: 45%;
+            }
+        }
+    </style>
+</head>
+<body class="full-screen">
+    <div class="dashboard-container">
+        <div class="dashboard-box">
+            <div class="logo-container">
+                <img src="https://scontent.fdad1-4.fna.fbcdn.net/v/t1.15752-9/485781663_1180107003791424_4465634879995273033_n.png?_nc_cat=105&ccb=1-7&_nc_sid=0024fc&_nc_eui2=AeEdZJhdbKRA0isy-ZixBgW5RZ4qYJYjMZFFnipgliMxkVztkM2YLhaExJC5lZPSfOATCz-ZVw-zeee2KEZ5HKAx&_nc_ohc=5kuakO09S8wQ7kNvwECpKO7&_nc_oc=AdkVlZREQijQDj8y3o35kcVRiHS58mOxe0T5rr4fw33l0rYtocE2V2ph_zRGUw-u07OoCVXg1XuGmneiaJJevMLk&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent.fdad1-4.fna&oh=03_Q7cD2QF8aZJhAd93rWpbDH21ENWv-0Ppx7qHXD8DZXPEzlpTOg&oe=685B16DD" 
+                    alt="RideCare Logo">
+            </div>
+
+            <h2>Welcome to RideCare</h2>
+            <div id="user-info">Please log in to continue.</div>
+
+            <div class="dashboard-links">
+                <a href="login" class="dashboard-button">Login</a>
+                <a href="signup" class="dashboard-button">Sign Up</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JS placeholder – có thể thêm kiểm tra đăng nhập sau này
+        console.log("RideCare loaded.");
+    </script>
+</body>
+</html>

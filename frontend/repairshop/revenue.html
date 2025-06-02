@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Revenue — RideCare</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body class="full-screen">
+  <div class="main-container">
+    <h2 class="content">Total Revenue</h2>
+    <div id="revenueDisplay" class="content">Loading…</div>
+  </div>
+
+  <script src="../../js/auth.js"></script>
+  <script src="../../js/repairshop.js"></script>
+  <script>
+    async function loadRevenue() {
+      const shops = await fetchShopProfile();
+      const shopId = shops[0]?.id;
+      const { total_revenue } = await fetchRevenue(shopId);
+      document.getElementById('revenueDisplay').innerText = `$${total_revenue.toFixed(2)}`;
+    }
+    loadRevenue();
+  </script>
+</body>
+</html>

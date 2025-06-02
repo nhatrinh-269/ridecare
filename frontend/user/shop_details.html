@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shop Info - RideCare</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #fff;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh; /* full height viewport */
+      max-width: 900px;
+      margin: 0 auto;
+      border: 1px solid #ddd;
+      box-sizing: border-box;
+    }
+    .fixed-header {
+      flex: 0 0 60px;
+      background: white;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      box-shadow: 0 2px 5px rgb(0 0 0 / 0.1);
+      z-index: 10;
+    }
+    .fixed-header h1 {
+      font-size: 20px;
+      color: #007BFF;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 50%;
+    }
+    .fixed-header .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+    .fixed-header button {
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .fixed-header button:hover {
+      background-color: #0056b3;
+    }
+    .content-scroll {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .shop-image {
+      max-width: 300px;
+      width: 100%;
+      border-radius: 8px;
+      margin: 0 auto 20px auto;
+      display: block;
+    }
+    p {
+      margin: 8px 0;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .service, .review {
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+    .service-header {
+      font-weight: bold;
+      font-size: 18px;
+      margin-left: 8px;
+    }
+    .review-header {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 3px;
+    }
+    label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-right: 8px;
+      cursor: pointer;
+    }
+    #review-form label, #review-form select, #review-form textarea, #review-form button {
+      display: block;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 10px;
+    }
+    #review-form textarea {
+      resize: vertical;
+      padding: 8px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+    }
+    #review-form button {
+      width: auto;
+      background-color: #28a745;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+    #review-form button:hover {
+      background-color: #1e7e34;
+    }
+    #review-message {
+      font-weight: bold;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header cố định trên -->
+    <div class="fixed-header">
+      <h1 id="shop-name">Loading...</h1>
+      <div class="btn-group">
+        <button id="btn-back">Quay lại</button>
+        <button id="btn-book-top">Đặt ngay</button>
+      </div>
+    </div>
+
+    <!-- Nội dung cuộn -->
+    <div class="content-scroll">
+      <img 
+        src="https://inhat.vn/wp-content/uploads/2021/05/sua-xe-may-da-nang.jpg" 
+        alt="Shop Image" 
+        class="shop-image"
+        id="shop-image"
+      />
+      <p><strong>Address:</strong> <span id="shop-address"></span></p>
+      <p><strong>Phone:</strong> <span id="shop-phone"></span></p>
+      <p><strong>Description:</strong> <span id="shop-description"></span></p>
+      <p><strong>Average Rating:</strong> <span id="shop-rating"></span></p>
+
+      <div class="section">
+        <h2>Services</h2>
+        <form id="services-form">
+          <div id="services-list">Loading services...</div>
+        </form>
+      </div>
+
+      <div class="section">
+        <h2>Reviews</h2>
+        <div id="reviews-list">Loading reviews...</div>
+      </div>
+
+      <div class="section">
+        <h2>Viết đánh giá của bạn</h2>
+        <form id="review-form">
+          <label for="rating">Đánh giá (1-5):</label>
+          <select id="rating" name="rating" required>
+            <option value="" disabled selected>Chọn số sao</option>
+            <option value="1">1 - Rất tệ</option>
+            <option value="2">2 - Tệ</option>
+            <option value="3">3 - Bình thường</option>
+            <option value="4">4 - Tốt</option>
+            <option value="5">5 - Rất tốt</option>
+          </select>
+
+          <label for="comment">Bình luận:</label>
+          <textarea id="comment" name="comment" rows="4" maxlength="500" placeholder="Viết cảm nhận của bạn..."></textarea>
+
+          <button type="submit">Gửi đánh giá</button>
+        </form>
+        <div id="review-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    const shopId = getQueryParam("id");
+    if (!shopId) {
+      alert("No shop ID provided.");
+      throw new Error("No shop ID provided.");
+    }
+
+    // Giả lập lấy user_id từ localStorage hoặc set mặc định (bạn thay bằng logic xác thực thật)
+    const userId = localStorage.getItem("user_id") || 1;
+
+    // Load shop info + services + reviews
+    function loadShopInfo() {
+      fetch(`/users/repairshop/${shopId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch shop info");
+          return res.json();
+        })
+        .then((shop) => {
+          document.getElementById("shop-name").textContent = shop.name;
+          document.getElementById("shop-address").textContent = shop.address;
+          document.getElementById("shop-phone").textContent = shop.phone;
+          document.getElementById("shop-description").textContent = shop.description || "No description";
+          document.getElementById("shop-rating").textContent = shop.rating_avg ? shop.rating_avg.toFixed(1) : "Chưa có đánh giá";
+
+          document.getElementById("shop-image").src = shop.image_url || "https://inhat.vn/wp-content/uploads/2021/05/sua-xe-may-da-nang.jpg";
+
+          // Services
+          const servicesList = document.getElementById("services-list");
+          servicesList.innerHTML = "";
+          if (!shop.services || shop.services.length === 0) {
+            servicesList.textContent = "No services available.";
+          } else {
+            shop.services.forEach((service) => {
+              const div = document.createElement("div");
+              div.className = "service";
+              div.innerHTML = `
+                <label>
+                  <input type="checkbox" name="service" value="${service.id}" ${!service.is_available ? "disabled" : ""} />
+                  <span class="service-header">${service.name} - ${service.price.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")} VND</span>
+                </label>
+                <div>Duration: ${service.duration} minutes</div>
+                <div>${service.description || ""}</div>
+                <div>Status: ${service.is_available ? "Available" : "Not available"}</div>
+              `;
+              servicesList.appendChild(div);
+            });
+          }
+
+          // Reviews
+          renderReviews(shop.reviews || []);
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    }
+
+    // Render reviews list
+    function renderReviews(reviews) {
+      const reviewsList = document.getElementById("reviews-list");
+      reviewsList.innerHTML = "";
+      if (reviews.length === 0) {
+        reviewsList.textContent = "No reviews yet.";
+      } else {
+        reviews.forEach((review) => {
+          const div = document.createElement("div");
+          div.className = "review";
+          div.innerHTML = `
+            <div class="review-header">Rating: ${review.rating} / 5</div>
+            <div>${review.comment || ""}</div>
+            <div><small>Posted at: ${new Date(review.created_at).toLocaleDateString()}</small></div>
+          `;
+          reviewsList.appendChild(div);
+        });
+      }
+    }
+
+    // Xử lý submit form review
+    const reviewForm = document.getElementById("review-form");
+    reviewForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const rating = +document.getElementById("rating").value;
+      const comment = document.getElementById("comment").value.trim();
+
+      if (!rating || rating < 1 || rating > 5) {
+        alert("Vui lòng chọn số sao hợp lệ.");
+        return;
+      }
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      }
+
+      const username = getCookie("username") || "unknown_user";
+
+      fetch("/users/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          rating,
+          comment,
+          repairshop_id: Number(shopId),
+          username: username
+        }),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Gửi đánh giá thất bại");
+          return res.json();
+        })
+        .then((data) => {
+          document.getElementById("review-message").textContent = "Gửi đánh giá thành công!";
+          reviewForm.reset();
+
+          // Reload shop info để cập nhật reviews mới
+          loadShopInfo();
+
+          setTimeout(() => {
+            document.getElementById("review-message").textContent = "";
+          }, 3000);
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    });
+
+    // Nút Đặt ngay - lấy dịch vụ đã chọn để chuyển sang booking
+    document.getElementById("btn-book-top").addEventListener("click", () => {
+      const selectedServices = [...document.querySelectorAll('input[name="service"]:checked')].map(
+        (input) => input.value
+      );
+      if (selectedServices.length === 0) {
+        alert("Vui lòng chọn ít nhất một dịch vụ để đặt.");
+        return;
+      }
+      // Chuyển sang trang booking kèm theo shopId và danh sách serviceIds
+      const serviceIdsParam = selectedServices.join(",");
+      window.location.href = `/user/booking?shop_id=${shopId}&service_ids=${serviceIdsParam}`;
+    });
+
+    // Nút Quay lại về trang search_shop
+    document.getElementById("btn-back").addEventListener("click", () => {
+      window.location.href = "/user/search_shops"; // hoặc trang search_shop bạn muốn
+    });
+
+    // Load dữ liệu lúc đầu
+    loadShopInfo();
+  </script>
+</body>
+</html>
